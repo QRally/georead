@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gravel Crew Recce v1.2</title>
+    <style>
+        :root { --bg: #0a0a0a; --accent: #ff5500; --text: #e0e0e0; --success: #00ff41; --danger: #ff4444; }
+        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        #header { padding: 10px; background: #1a1a1a; display: flex; justify-content: space-between; border-bottom: 2px solid var(--accent); }
+        #odometer-section { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #live-dist { font-size: 5rem; font-weight: 900; color: var(--success); line-height: 1; }
+        .label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 2px; }
+
+        #capture-btn { background-color: var(--accent); color: white; border: none; width: 100%; height: 25vh; font-size: 2rem; font-weight: bold; }
+        
+        #input-panel { padding: 15px; background: #111; display: grid; grid-template-columns: 1fr 80px; gap: 10px; border-top: 1px solid #333; }
+        input[type="text"] { background: #222; border: 1px solid #444; color: white; padding: 15px; font-size: 1.2rem; border-radius: 5px; }
+        
+        #log-preview { height: 100px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; padding: 10px; background: #000; color: var(--success); }
+        
+        .toolbar { display: flex; background: #222; }
+        .toolbar button { flex: 1; padding: 15px; border: none; color: white; font-weight: bold; text-transform: uppercase; font-size: 0.7rem; cursor: pointer; }
+        .btn-del { background: #442222; color: var(--danger); border-right: 1px solid #333; }
+        .btn-export { background: #224422; color: var(--success); }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <div>GPS: <b id="acc">--</b>m</div>
+    <div id="point-count">Points: 0</div>
+</div>
+
+<div id="odometer-section">
+    <div class="label">Meters Since Last Note</div>
+    <div id="live-dist">0</div>
+</div>
+
+<button id="capture-btn" onclick="capturePoint()">CAPTURE COORDINATE</button>
+
+<div id="input-panel">
+    <input type="text" id="note-input" placeholder="Type Note (e.g. L4 > R2)">
+    <button onclick="saveNote()" style="background: var(--success); border:none; color:black; font-weight:bold;">SAVE</button>
+</div>
+
+<div id="log-preview"></div>
+
+<div class="toolbar">
+    <button class="btn-del" onclick="deleteLast()">Undo Last</button>
+    <button style="background: #333;" onclick="clearAll()">Reset All</button>
+    <button class="btn-export" onclick="exportData()">Export JSON</button>
+</div>
+
+<script>
+    let log = [];
+    let currentCoords = null;
+    const R = 6371000; 
+
+    // Keep screen on
+    if ('wakeLock' in navigator) { navigator.wakeLock.request('screen').catch(()=>{}); }
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    }
+
+    navigator.geolocation.watchPosition((pos) => {
+        currentCoords = pos.coords;
+        document.getElementById('acc').innerText = pos.coords.accuracy.toFixed(1);
+        if (log.length > 0) {
+            const last = log[log.length - 1];
+            const d = getDistance(last.lat, last.lng, pos.coords.latitude, pos.coords.longitude);
+            document.getElementById('live-dist').innerText = Math.round(d);
+        }
+    }, null, { enableHighAccuracy: true });
+
+    function capturePoint() {
+        if (!currentCoords) return alert("Waiting for GPS...");
+        if (window.navigator.vibrate) window.navigator.vibrate(60);
+
+        log.push({
+            lat: currentCoords.latitude,
+            lng: currentCoords.longitude,
+            note: "PENDING...",
+            time: new Date().toLocaleTimeString()
+        });
+        document.getElementById('note-input').focus();
+        updateDisplay();
+    }
+
+    function saveNote() {
+        const val = document.getElementById('note-input').value.trim();
+        if (log.length > 0) {
+            log[log.length - 1].note = val || "Note";
+            document.getElementById('note-input').value = "";
+            updateDisplay();
+        }
+    }
+
+    function deleteLast() {
+        if (confirm("Delete the very last point recorded?")) {
+            log.pop();
+            updateDisplay();
+        }
+    }
+
+    function clearAll() {
+        if (confirm("ERASE EVERYTHING? This cannot be undone.")) {
+            log = [];
+            updateDisplay();
+        }
+    }
+
+    function updateDisplay() {
+        document.getElementById('point-count').innerText = `Points: ${log.length}`;
+        document.getElementById('log-preview').innerHTML = [...log].reverse()
+            .map(e => `<div>[${e.time}] ${e.note}</div>`).join('');
+    }
+
+    function exportData() {
+        if(log.length === 0) return alert("Nothing to export.");
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(log));
+        const dl = document.createElement('a');
+        dl.setAttribute("href", dataStr);
+        dl.setAttribute("download", `stage_${Date.now()}.json`);
+        dl.click();
+    }
+</script>
+</body>
+</html>
