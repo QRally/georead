@@ -2,55 +2,123 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gravel Crew Recce v1.2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Gravel Crew Recce v1.3</title>
     <style>
         :root { --bg: #0a0a0a; --accent: #ff5500; --text: #e0e0e0; --success: #00ff41; --danger: #ff4444; }
-        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        #header { padding: 10px; background: #1a1a1a; display: flex; justify-content: space-between; border-bottom: 2px solid var(--accent); }
-        #odometer-section { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        * { box-sizing: border-box; }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            font-family: sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            height: 100svh; /* Small Viewport Height for mobile */
+            overflow: hidden; 
+        }
+        
+        #header { 
+            padding: 10px; 
+            background: #1a1a1a; 
+            display: flex; 
+            justify-content: space-between; 
+            border-bottom: 2px solid var(--accent); 
+            flex-shrink: 0; 
+        }
+        
+        #odometer-section { 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100px;
+        }
+        
         #live-dist { font-size: 5rem; font-weight: 900; color: var(--success); line-height: 1; }
         .label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 2px; }
 
-        #capture-btn { background-color: var(--accent); color: white; border: none; width: 100%; height: 25vh; font-size: 2rem; font-weight: bold; }
+        #capture-btn { 
+            background-color: var(--accent); 
+            color: white; 
+            border: none; 
+            width: 100%; 
+            height: 22vh; 
+            font-size: 1.8rem; 
+            font-weight: bold; 
+            flex-shrink: 0;
+            cursor: pointer;
+        }
         
-        #input-panel { padding: 15px; background: #111; display: grid; grid-template-columns: 1fr 80px; gap: 10px; border-top: 1px solid #333; }
-        input[type="text"] { background: #222; border: 1px solid #444; color: white; padding: 15px; font-size: 1.2rem; border-radius: 5px; }
+        #input-panel { 
+            padding: 10px; 
+            background: #111; 
+            display: grid; 
+            grid-template-columns: 1fr 85px; 
+            gap: 10px; 
+            border-top: 1px solid #333;
+            flex-shrink: 0; 
+        }
         
-        #log-preview { height: 100px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; padding: 10px; background: #000; color: var(--success); }
+        input[type="text"] { 
+            background: #222; 
+            border: 1px solid #444; 
+            color: white; 
+            padding: 15px; 
+            font-size: 1.1rem; 
+            border-radius: 5px; 
+            width: 100%;
+        }
         
-        .toolbar { display: flex; background: #222; }
-        .toolbar button { flex: 1; padding: 15px; border: none; color: white; font-weight: bold; text-transform: uppercase; font-size: 0.7rem; cursor: pointer; }
-        .btn-del { background: #442222; color: var(--danger); border-right: 1px solid #333; }
-        .btn-export { background: #224422; color: var(--success); }
+        .btn-save { background: var(--success); border:none; color:black; font-weight:bold; border-radius: 5px; }
+
+        #log-preview { 
+            height: 70px; 
+            overflow-y: auto; 
+            font-family: monospace; 
+            font-size: 0.8rem; 
+            padding: 8px; 
+            background: #000; 
+            color: var(--success); 
+            flex-shrink: 0; 
+        }
+        
+        .toolbar { display: flex; background: #222; flex-shrink: 0; }
+        .toolbar button { flex: 1; padding: 15px; border: none; color: white; font-weight: bold; font-size: 0.7rem; text-transform: uppercase; }
+        .btn-del { background: #3d1a1a; color: var(--danger); border-right: 1px solid #333; }
+        .btn-fs { background: #333; border-right: 1px solid #444; }
     </style>
 </head>
 <body>
 
 <div id="header">
     <div>GPS: <b id="acc">--</b>m</div>
-    <div id="point-count">Points: 0</div>
+    <div id="point-count">Pts: 0</div>
 </div>
 
 <div id="odometer-section">
-    <div class="label">Meters Since Last Note</div>
+    <div class="label">Meters Since Last</div>
     <div id="live-dist">0</div>
 </div>
 
-<button id="capture-btn" onclick="capturePoint()">CAPTURE COORDINATE</button>
+<button id="capture-btn" onclick="capturePoint()">CAPTURE POINT</button>
 
 <div id="input-panel">
-    <input type="text" id="note-input" placeholder="Type Note (e.g. L4 > R2)">
-    <button onclick="saveNote()" style="background: var(--success); border:none; color:black; font-weight:bold;">SAVE</button>
+    <input type="text" id="note-input" placeholder="Note (e.g. R4 tightens)">
+    <button class="btn-save" onclick="saveNote()">SAVE</button>
 </div>
 
 <div id="log-preview"></div>
 
 <div class="toolbar">
-    <button class="btn-del" onclick="deleteLast()">Undo Last</button>
-    <button style="background: #333;" onclick="clearAll()">Reset All</button>
-    <button class="btn-export" onclick="exportData()">Export JSON</button>
+    <button class="btn-fs" onclick="toggleFullscreen()">Fullscreen</button>
+    <button class="btn-del" onclick="deleteLast()">Undo</button>
+    <button style="background: #222;" onclick="clearAll()">Reset</button>
+    <button style="background: #1a3d1a; color: var(--success);" onclick="exportData()">Export</button>
 </div>
 
 <script>
@@ -58,13 +126,24 @@
     let currentCoords = null;
     const R = 6371000; 
 
+    // Fullscreen logic
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(e => {
+                alert(`Error: ${e.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
     // Keep screen on
     if ('wakeLock' in navigator) { navigator.wakeLock.request('screen').catch(()=>{}); }
 
     function getDistance(lat1, lon1, lat2, lon2) {
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon/2)**2;
         return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
 
@@ -79,14 +158,14 @@
     }, null, { enableHighAccuracy: true });
 
     function capturePoint() {
-        if (!currentCoords) return alert("Waiting for GPS...");
+        if (!currentCoords) return;
         if (window.navigator.vibrate) window.navigator.vibrate(60);
 
         log.push({
             lat: currentCoords.latitude,
             lng: currentCoords.longitude,
-            note: "PENDING...",
-            time: new Date().toLocaleTimeString()
+            note: "...",
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
         });
         document.getElementById('note-input').focus();
         updateDisplay();
@@ -97,36 +176,38 @@
         if (log.length > 0) {
             log[log.length - 1].note = val || "Note";
             document.getElementById('note-input').value = "";
+            // Remove focus to hide keyboard on some devices
+            document.activeElement.blur(); 
             updateDisplay();
         }
     }
 
     function deleteLast() {
-        if (confirm("Delete the very last point recorded?")) {
+        if (log.length > 0 && confirm("Delete last point?")) {
             log.pop();
             updateDisplay();
         }
     }
 
     function clearAll() {
-        if (confirm("ERASE EVERYTHING? This cannot be undone.")) {
+        if (confirm("Erase all data?")) {
             log = [];
             updateDisplay();
         }
     }
 
     function updateDisplay() {
-        document.getElementById('point-count').innerText = `Points: ${log.length}`;
+        document.getElementById('point-count').innerText = `Pts: ${log.length}`;
         document.getElementById('log-preview').innerHTML = [...log].reverse()
             .map(e => `<div>[${e.time}] ${e.note}</div>`).join('');
     }
 
     function exportData() {
-        if(log.length === 0) return alert("Nothing to export.");
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(log));
+        if(log.length === 0) return;
+        const blob = new Blob([JSON.stringify(log, null, 2)], {type : 'application/json'});
         const dl = document.createElement('a');
-        dl.setAttribute("href", dataStr);
-        dl.setAttribute("download", `stage_${Date.now()}.json`);
+        dl.href = URL.createObjectURL(blob);
+        dl.download = `rally_stage_${Date.now()}.json`;
         dl.click();
     }
 </script>
